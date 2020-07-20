@@ -14,11 +14,16 @@ def scrape_all():
           "news_paragraph": news_paragraph,
           "featured_image": featured_image(browser),
           "facts": mars_facts(),
+          "hemisphere_images": high_res_images(browser),
           "last_modified": dt.datetime.now()
     }
    # Stop webdriver and return data
    browser.quit()
    return data
+
+def get_html(browser):
+    """Returns html from BeautifulSoup html parser based on web object passsed in."""
+    return bsoup(browser.html, 'html.parser')
 
 def mars_news(browser):
     """Scrape Mars News"""
@@ -31,8 +36,7 @@ def mars_news(browser):
     browser.is_element_present_by_css("ul.item_list li.slide", wait_time=5)
 
     # Convert the browser html to a soup object and then quit the browser
-    html = browser.html
-    news_soup = bsoup(html, 'html.parser')
+    news_soup = get_html(browser)
 
     try:
         slide_elem = news_soup.select_one('ul.item_list li.slide')
@@ -64,8 +68,7 @@ def featured_image(browser):
     more_info_elem.click()
 
     # Parse the resulting html with soup
-    html = browser.html
-    img_soup = bsoup(html, 'html.parser')
+    img_soup = get_html(browser)
 
     try:
         # Find the relative image url
@@ -91,6 +94,43 @@ def mars_facts():
 
     # Convert dataframe into HTML format, add bootstrap
     return df.to_html()
+
+def high_res_images(browser):
+    images = []
+    """Scrape Images"""
+
+    # Visit URL
+    base_url = 'https://astrogeology.usgs.gov/'
+    start_url = '/search/results?q=hemisphere+enhanced&k1=target&v1=Mars'
+
+    # Visit web page and get HTML
+    browser.visit(base_url + start_url)
+    soup = get_html(browser)
+
+    # Find main_urls for hemispheres
+    main_urls = soup.find_all('a', class_='itemLink product-item')
+
+    # Parse through main_urls to find links
+    for link in main_urls:
+        # Due to links on image icons as well, we only grab link with header
+        is_link_header = link.find('h3')
+
+        # Only links with header will have a title
+        if is_link_header:
+            title = is_link_header.text
+            hemisphere_url = link['href']
+            # Now that we've found the right link, visit hemisphere page and get HTML to find image link
+            browser.visit(base_url + hemisphere_url)
+            soup = get_html(browser)
+
+            # Find image reference and if found, append title and url to full high-resolution image to image list
+            hemisphere_image_ref = soup.find('img', class_='wide-image')
+            if hemisphere_image_ref:
+                images.append(dict({
+                    'title': title
+                    , 'img_url': base_url + hemisphere_image_ref['src']
+                }))
+    return images
 
 if __name__ == "__main__":
     # If running as script, print scraped data

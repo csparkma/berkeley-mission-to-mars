@@ -48,6 +48,23 @@
           </div>
         </div>
       </div>
+      <h3 style="padding-top:30px; text-align: center;">Mars Hemispheres</h3>
+      <div class='card-deck'>
+        <div class='col-md-12'>
+            <div class="row">
+                {% for item in mars.hemisphere_images %}
+                <div class="col-md-6">
+                    <div class="card text-white bg-dark" style="margin: 30px;">
+                        <img class="card-img-top" src="{{item.img_url}}" />
+                        <div class="card-body">
+                            <p class="card-text">{{ item.title }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+      </div>
     </div>
   </body>
 </html>
